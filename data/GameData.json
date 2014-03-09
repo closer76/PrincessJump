@@ -1,0 +1,10 @@
+{
+    "Name" : "Princess Jump",
+    "Actors" :
+    {
+        "Test" :
+        {
+            "x" : 100, "y" : 200
+        }
+    }
+}
