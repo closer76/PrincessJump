@@ -1,3 +1,5 @@
+var FRAMEINTERVAL = 1000 / 60;
+
 var GameApp = function() {
   var that = {};
   var gameData = null;
@@ -38,6 +40,7 @@ var GameApp = function() {
     
     // Initialize actors
     
+    setInterval(m_update, FRAMEINTERVAL);
   };
   that.run = run;  // export run()
   
@@ -69,29 +72,44 @@ var GameApp = function() {
       gameData = parsed;
       console.log("It\'s ok!");
       console.log(gameData.Name);
-
-      m_update();
-
+      
+      for ( var i in gameData.Actors)
+      {
+        var actor = gameData.Actors[i];
+        actor.x_dir = 2;
+        actor.y_dir = 2;
+        actor.move = function() { this.x += this.x_dir; this.y += this.y_dir;};
+      }
     }
   };
   
   var m_update = function () {
-    m_updateActors();
-    
-    m_updateFrame();
+    if ( gameData)
+    {
+      m_updateActors();      
+      m_updateFrame();
+    }
   };
   
   var m_updateActors = function()
   {
+    for ( var i in gameData.Actors)
+    {
+      var actor = gameData.Actors[i];
+      actor.move();
+      if ( actor.x <= 0 || actor.x >= window.innerWidth) actor.x_dir = -actor.x_dir;
+      if ( actor.y <= 0 || actor.y >= window.innerHeight) actor.y_dir = -actor.y_dir;
+    }
   };
   
   var m_updateFrame = function ()
   {
+    ctx.clearRect(0,0,canvas.width, canvas.height);
+    
     for ( var i in gameData.Actors)
     {
       var actor = gameData.Actors[i];
-      console.log(actor);
-      ctx.fillText(actor.name, actor.x, actor.y);
+      ctx.fillText(i, actor.x, actor.y);
     }
   };
   
