@@ -7,6 +7,7 @@ var GameApp = function() {
   // 2D context
   var canvas = null;
   var ctx = null;
+  var view = {};
   
   // Actors
   var actors = [];
@@ -17,10 +18,12 @@ var GameApp = function() {
 
     // Create canvas object
     canvas = document.createElement('canvas');
-    canvas.width = window.innerWidth * scale;
-    canvas.height = window.innerHeight * scale;
-    canvas.style.width = window.innerWidth.toString() + 'px';
-    canvas.style.height = window.innerHeight.toString() + 'px';
+    view = m_calcBestView(window.innerWidth * 0.9, window.innerHeight * 0.9, 4, 3);
+    canvas.width = view.w * scale;
+    canvas.height = view.h * scale;
+    canvas.style.width = view.w + 'px';
+    canvas.style.height = view.h + 'px';
+    canvas.style.border = '1px solid black';
 
     // Insert canvas into HTML body
     var body = document.getElementsByTagName('body')[0];
@@ -33,16 +36,30 @@ var GameApp = function() {
     // Create 2D context
     ctx = canvas.getContext("2d");
     ctx.scale(scale,scale);
-    ctx.fillText( "Hello Canvas!", 100, 100);
 
     // Load data file
     m_getResource( 'data/GameData.json', m_parseGameData);
     
     // Initialize actors
-    
+    // Setup frame update interval
     setInterval(m_update, FRAMEINTERVAL);
   };
   that.run = run;  // export run()
+  
+  var m_calcBestView = function(x_max, y_max, x_ratio, y_ratio) {
+    var y_tmp = x_max / x_ratio * y_ratio;
+    if ( y_tmp > y_max)
+    {
+      view.w = Math.floor(y_max / y_ratio * x_ratio);
+      view.h = y_max;
+    }
+    else {
+      view.w = x_max;
+      view.h = Math.floor(x_max / x_ratio * y_ratio);
+    }
+    
+    return view;
+  };
   
   var m_getResource = function( url, callback, type) {
     if (url)
@@ -97,8 +114,8 @@ var GameApp = function() {
     {
       var actor = gameData.Actors[i];
       actor.move();
-      if ( actor.x <= 0 || actor.x >= window.innerWidth) actor.x_dir = -actor.x_dir;
-      if ( actor.y <= 0 || actor.y >= window.innerHeight) actor.y_dir = -actor.y_dir;
+      if ( actor.x <= 0 || actor.x >= view.w) actor.x_dir = -actor.x_dir;
+      if ( actor.y <= 0 || actor.y >= view.h) actor.y_dir = -actor.y_dir;
     }
   };
   
