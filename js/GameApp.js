@@ -1,4 +1,10 @@
-var FRAMEINTERVAL = 1000 / 60;
+var FPS = 60;
+var FRAMEINTERVAL = 1000 / FPS;
+var KMS_WIDTH = 16;
+var KMS_HEIGHT = 12;
+
+var V_ITERATION = 6;
+var P_ITERATION = 2;
 
 var GameApp = function() {
   var that = {};
@@ -8,6 +14,13 @@ var GameApp = function() {
   var canvas = null;
   var ctx = null;
   var view = {};
+  var pix_per_m = 1;
+  
+  // Box2D objects
+  var world = null;
+  var princess = null;
+  var img = null;
+  var img_load_ok = false;
   
   // Actors
   var actors = [];
@@ -40,7 +53,14 @@ var GameApp = function() {
     // Load data file
     m_getResource( 'data/GameData.json', m_parseGameData);
     
-    // Initialize actors
+    // Load image
+    img = new Image();
+    img.onload = m_imageLoaded;
+    img.src = 'images/Candy_00.png';
+    
+    // Init Box2D system...
+    m_initWorld();
+
     // Setup frame update interval
     setInterval(m_update, FRAMEINTERVAL);
   };
@@ -58,6 +78,8 @@ var GameApp = function() {
       view.h = Math.floor(x_max / x_ratio * y_ratio);
     }
     
+    pix_per_m = (KMS_WIDTH === 0) ? 1 : view.w / KMS_WIDTH;
+
     return view;
   };
   
@@ -100,8 +122,44 @@ var GameApp = function() {
     }
   };
   
+  var m_imageLoaded = function () {
+    img_load_ok = true;
+  }
+  
+  var m_initWorld = function () {
+    // Create world object
+    world = new b2World( new b2Vec2(0, 10), true);
+    
+    // Create fixture definition for further usage
+    var fixdef = new b2FixtureDef;
+    fixdef.shape = new b2PolygonShape;
+    fixdef.density = 1.0;
+    fixdef.friction = 0.3;
+
+    // Create static bodies of boundaries
+    var bodydef = new b2BodyDef;
+    var groundbox = new b2PolygonShape;
+
+    bodydef.type = b2Body.b2_staticBody;
+    bodydef.position.Set(KMS_WIDTH / 2, KMS_HEIGHT + 1.8);
+    fixdef.shape.SetAsBox(KMS_WIDTH, 2);
+    world.CreateBody(bodydef).CreateFixture(fixdef);
+    bodydef.position.Set(KMS_WIDTH / 2, -1.8);
+    world.CreateBody(bodydef).CreateFixture(fixdef);
+    /// TODO: walls should be created...
+    
+    // Create dynamic bodies for actors
+    bodydef.type = b2Body.b2_dynamicBody;
+    bodydef.fixedRotation = true;
+    bodydef.position.Set(KMS_WIDTH / 2, KMS_HEIGHT / 2);
+   
+    princess = world.CreateBody(bodydef)
+    fixdef.shape.SetAsBox( 0.5, 1.0);
+    princess.CreateFixture(fixdef);
+  };
+  
   var m_update = function () {
-    if ( gameData)
+    if ( gameData && m_imageLoaded)
     {
       m_updateActors();      
       m_updateFrame();
@@ -117,6 +175,9 @@ var GameApp = function() {
       if ( actor.x <= 0 || actor.x >= view.w) actor.x_dir = -actor.x_dir;
       if ( actor.y <= 0 || actor.y >= view.h) actor.y_dir = -actor.y_dir;
     }
+    
+    world.Step(1/FPS, V_ITERATION, P_ITERATION);
+    world.ClearForces();
   };
   
   var m_updateFrame = function ()
@@ -128,6 +189,12 @@ var GameApp = function() {
       var actor = gameData.Actors[i];
       ctx.fillText(i, actor.x, actor.y);
     }
+    
+    var pos = princess.GetPosition();
+    //ctx.fillRect(pos.x * pix_per_m + pix_per_m, pos.y * pix_per_m, 0.5 * pix_per_m, 1 * pix_per_m);
+    ctx.drawImage( img,
+      pos.x * pix_per_m, pos.y * pix_per_m,
+      0.5 * pix_per_m, 1 * pix_per_m);
   };
   
   return that;
